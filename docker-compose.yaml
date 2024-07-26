@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_DATABASE: instabug_task
+      MYSQL_USER: instabug
+      MYSQL_PASSWORD: 12345
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+
+  redis:
+    image: redis:6.2.0
+    networks:
+      - backend
+
+  elasticsearch:
+    image: elastic/elasticsearch:8.14.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=123456789
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - backend
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8086:8080" 
+
+  app:
+    build: .
+    volumes:
+      - .:/app
+    command: >
+      sh -c "sleep 20 && rails db:create && rails db:migrate && foreman start"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - elasticsearch
+      - db
+    networks:
+      - backend
+    restart: on-failure
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTIC_PASSWORD=123456789
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_HOST=db
+      - DATABASE_PASSWORD=12345
+      - DATABASE_USERNAME=instabug
+      - DATABASE_NAME=instabug_task
+      - RAILS_ENV=development
+
+    
+
+networks:
+  backend:
+    driver: bridge
+    
+volumes:
+  mysql_data:

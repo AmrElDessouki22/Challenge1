@@ -1,0 +1,11 @@
+:concurrency: 3
+:queues:
+  - default
+  - scheduler
+
+:scheduler:
+  :schedule:
+    hourly_task:
+      cron: "0 * * * *"  
+      class: UpdateCountsAppChatJob
+      queue: scheduler
